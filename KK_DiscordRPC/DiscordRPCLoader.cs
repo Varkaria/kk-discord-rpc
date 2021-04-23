@@ -1,5 +1,5 @@
 ﻿/*
- * "borrowed" from https://github.com/lukasong/lsaberrp/blob/master/LukaSaberRP/DiscordRpc.cs
+ * "borrowed" from https://github.com/eai04191/craftopia-rpc/blob/main/craftopia-rpc/DiscordRPC.cs
 */
 
 using System;
@@ -9,8 +9,12 @@ using System.Text;
 
 namespace KK_DiscordRPC
 {
-    public class DiscordRpc
+    internal class DiscordRPC
     {
+        //DLL Imports here. Make sure the discord-rpc.dll is in the game's mono folder or else the game will crash.
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void ReadyCallback();
+
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void DisconnectedCallback(int errorCode, string message);
 
@@ -21,49 +25,10 @@ namespace KK_DiscordRPC
         public delegate void JoinCallback(string secret);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void ReadyCallback(ref DiscordUser connectedUser);
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate void RequestCallback(ref DiscordUser request);
-
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void SpectateCallback(string secret);
 
-        public enum Reply
-        {
-            No = 0,
-            Yes = 1,
-            Ignore = 2
-        }
-
-        [DllImport("discord-rpc", EntryPoint = "Discord_Initialize", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void Initialize(string applicationId, ref EventHandlers handlers, bool autoRegister,
-            string optionalSteamId);
-
-        [DllImport("discord-rpc", EntryPoint = "Discord_Shutdown", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void Shutdown();
-
-        [DllImport("discord-rpc", EntryPoint = "Discord_RunCallbacks", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void RunCallbacks();
-
-        [DllImport("discord-rpc", EntryPoint = "Discord_UpdatePresence", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void UpdatePresenceNative(ref RichPresenceStruct presence);
-
-        [DllImport("discord-rpc", EntryPoint = "Discord_ClearPresence", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void ClearPresence();
-
-        [DllImport("discord-rpc", EntryPoint = "Discord_Respond", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void Respond(string userId, Reply reply);
-
-        [DllImport("discord-rpc", EntryPoint = "Discord_UpdateHandlers", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void UpdateHandlers(ref EventHandlers handlers);
-
-        public static void UpdatePresence(RichPresence presence)
-        {
-            var presencestruct = presence.GetStruct();
-            UpdatePresenceNative(ref presencestruct);
-            presence.FreeMem();
-        }
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void RequestCallback(JoinRequest request);
 
         public struct EventHandlers
         {
@@ -76,145 +41,53 @@ namespace KK_DiscordRPC
         }
 
         [Serializable]
-        [StructLayout(LayoutKind.Sequential)]
-        public struct RichPresenceStruct
+        public struct RichPresence
         {
-            public IntPtr state; /* max 128 bytes */
-            public IntPtr details; /* max 128 bytes */
+            public string state;
+            public string details;
             public long startTimestamp;
             public long endTimestamp;
-            public IntPtr largeImageKey; /* max 32 bytes */
-            public IntPtr largeImageText; /* max 128 bytes */
-            public IntPtr smallImageKey; /* max 32 bytes */
-            public IntPtr smallImageText; /* max 128 bytes */
-            public IntPtr partyId; /* max 128 bytes */
+            public string largeImageKey;
+            public string largeImageText;
+            public string smallImageKey;
+            public string smallImageText;
+            public string partyId;
             public int partySize;
             public int partyMax;
-            public IntPtr matchSecret; /* max 128 bytes */
-            public IntPtr joinSecret; /* max 128 bytes */
-            public IntPtr spectateSecret; /* max 128 bytes */
+            public string matchSecret;
+            public string joinSecret;
+            public string spectateSecret;
             public bool instance;
         }
 
         [Serializable]
-        public struct DiscordUser
+        public struct JoinRequest
         {
             public string userId;
             public string username;
-            public string discriminator;
             public string avatar;
         }
 
-        public class RichPresence
+        public enum Reply
         {
-            private readonly List<IntPtr> _buffers = new List<IntPtr>(10);
-            private RichPresenceStruct _presence;
-            public string details; /* max 128 bytes */
-            public long endTimestamp;
-            public bool instance;
-            public string joinSecret; /* max 128 bytes */
-            public string largeImageKey; /* max 32 bytes */
-            public string largeImageText; /* max 128 bytes */
-            public string matchSecret; /* max 128 bytes */
-            public string partyId; /* max 128 bytes */
-            public int partyMax;
-            public int partySize;
-            public string smallImageKey; /* max 32 bytes */
-            public string smallImageText; /* max 128 bytes */
-            public string spectateSecret; /* max 128 bytes */
-            public long startTimestamp;
-
-            public string state; /* max 128 bytes */
-
-            /// <summary>
-            ///     Get the <see cref="RichPresenceStruct" /> reprensentation of this instance
-            /// </summary>
-            /// <returns><see cref="RichPresenceStruct" /> reprensentation of this instance</returns>
-            internal RichPresenceStruct GetStruct()
-            {
-                if (_buffers.Count > 0) FreeMem();
-
-                _presence.state = StrToPtr(state, 128);
-                _presence.details = StrToPtr(details, 128);
-                _presence.startTimestamp = startTimestamp;
-                _presence.endTimestamp = endTimestamp;
-                _presence.largeImageKey = StrToPtr(largeImageKey, 32);
-                _presence.largeImageText = StrToPtr(largeImageText, 128);
-                _presence.smallImageKey = StrToPtr(smallImageKey, 32);
-                _presence.smallImageText = StrToPtr(smallImageText, 128);
-                _presence.partyId = StrToPtr(partyId, 128);
-                _presence.partySize = partySize;
-                _presence.partyMax = partyMax;
-                _presence.matchSecret = StrToPtr(matchSecret, 128);
-                _presence.joinSecret = StrToPtr(joinSecret, 128);
-                _presence.spectateSecret = StrToPtr(spectateSecret, 128);
-                _presence.instance = instance;
-
-                return _presence;
-            }
-
-            /// <summary>
-            ///     Returns a pointer to a representation of the given string with a size of maxbytes
-            /// </summary>
-            /// <param name="input">String to convert</param>
-            /// <param name="maxbytes">Max number of bytes to use</param>
-            /// <returns>Pointer to the UTF-8 representation of <see cref="input" /></returns>
-            private IntPtr StrToPtr(string input, int maxbytes)
-            {
-                if (string.IsNullOrEmpty(input)) return IntPtr.Zero;
-                var convstr = StrClampBytes(input, maxbytes);
-                var convbytecnt = Encoding.UTF8.GetByteCount(convstr);
-                var buffer = Marshal.AllocHGlobal(convbytecnt);
-                _buffers.Add(buffer);
-                Marshal.Copy(Encoding.UTF8.GetBytes(convstr), 0, buffer, convbytecnt);
-                return buffer;
-            }
-
-            /// <summary>
-            ///     Convert string to UTF-8 and add null termination
-            /// </summary>
-            /// <param name="toconv">string to convert</param>
-            /// <returns>UTF-8 representation of <see cref="toconv" /> with added null termination</returns>
-            private static string StrToUtf8NullTerm(string toconv)
-            {
-                var str = toconv.Trim();
-                var bytes = Encoding.Default.GetBytes(str);
-                if (bytes.Length > 0 && bytes[bytes.Length - 1] != 0) str += "\0\0";
-                return Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(str));
-            }
-
-            /// <summary>
-            ///     Clamp the string to the given byte length preserving null termination
-            /// </summary>
-            /// <param name="toclamp">string to clamp</param>
-            /// <param name="maxbytes">max bytes the resulting string should have (including null termination)</param>
-            /// <returns>null terminated string with a byte length less or equal to <see cref="maxbytes" /></returns>
-            private static string StrClampBytes(string toclamp, int maxbytes)
-            {
-                var str = StrToUtf8NullTerm(toclamp);
-                var strbytes = Encoding.UTF8.GetBytes(str);
-
-                if (strbytes.Length <= maxbytes) return str;
-
-                var newstrbytes = new byte[] { };
-                Array.Copy(strbytes, 0, newstrbytes, 0, maxbytes - 1);
-                newstrbytes[newstrbytes.Length - 1] = 0;
-                newstrbytes[newstrbytes.Length - 2] = 0;
-
-                return Encoding.UTF8.GetString(newstrbytes);
-            }
-
-            /// <summary>
-            ///     Free the allocated memory for conversion to <see cref="RichPresenceStruct" />
-            /// </summary>
-            internal void FreeMem()
-            {
-                for (var i = _buffers.Count - 1; i >= 0; i--)
-                {
-                    Marshal.FreeHGlobal(_buffers[i]);
-                    _buffers.RemoveAt(i);
-                }
-            }
+            No,
+            Yes,
+            Ignore
         }
+
+        [DllImport("discord-rpc", CallingConvention = CallingConvention.Cdecl, EntryPoint = "Discord_Initialize")]
+        public static extern void Initialize(string applicationId, ref EventHandlers handlers, bool autoRegister, string optionalSteamId);
+
+        [DllImport("discord-rpc", CallingConvention = CallingConvention.Cdecl, EntryPoint = "Discord_Shutdown")]
+        public static extern void Shutdown();
+
+        [DllImport("discord-rpc", CallingConvention = CallingConvention.Cdecl, EntryPoint = "Discord_RunCallbacks")]
+        public static extern void RunCallbacks();
+
+        [DllImport("discord-rpc", CallingConvention = CallingConvention.Cdecl, EntryPoint = "Discord_UpdatePresence")]
+        public static extern void UpdatePresence(ref RichPresence presence);
+
+        [DllImport("discord-rpc", CallingConvention = CallingConvention.Cdecl, EntryPoint = "Discord_Respond")]
+        public static extern void Respond(string userId, Reply reply);
     }
 }
