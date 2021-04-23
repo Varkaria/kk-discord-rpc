@@ -30,7 +30,7 @@ namespace KK_DiscordRPC
                 false,
                 "643270");
 
-            // Console.WriteLine("Current gamemode is {0}", KoikatuAPI.GetCurrentGameMode());
+            Console.WriteLine("Current gamemode is {0}", KoikatuAPI.GetCurrentGameMode());
             SetStatus();
             Logger.LogInfo("Status Set");
         }
