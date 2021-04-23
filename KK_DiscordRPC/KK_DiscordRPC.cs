@@ -12,40 +12,24 @@ namespace KK_DiscordRPC
         public const string GUID = "varkaria.DiscordRPC";
         public const string Version = "1.0";
 
-        // internal static Koi_DiscordRPC Instance;
-        internal static DiscordRPC.RichPresence prsnc;
+        internal static Koi_DiscordRPC Instance;
         internal new static ManualLogSource Logger;
 
-        // public static readonly DiscordRpc.RichPresence Presence = new DiscordRpc.RichPresence();
+        public static readonly DiscordRpc.RichPresence Presence = new DiscordRpc.RichPresence();
 
         private void Awake()
         {
-            // Instance = this;
+            Instance = this;
             Logger = base.Logger;
 
-            var handlers = new DiscordRPC.EventHandlers();
-            DiscordRPC.Initialize(
-                "676435940499128350",
+            var handlers = new DiscordRpc.EventHandlers();
+            DiscordRpc.Initialize(
+                "604588957208150016",
                 ref handlers,
                 false,
                 "643270");
 
             Console.WriteLine("Current gamemode is {0}", KoikatuAPI.GetCurrentGameMode());
-            SetStatus();
-            Logger.LogInfo("Status Set");
-        }
-        static void SetStatus()
-        {
-            prsnc.state = "Main Menu";
-            prsnc.details = "Testing DiscordRPC for KK";
-            prsnc.startTimestamp = 0;
-            prsnc.largeImageKey = null;
-            prsnc.largeImageText = "this is a test";
-            prsnc.smallImageKey = null;
-            prsnc.smallImageText = null;
-            prsnc.partySize = 0;
-            prsnc.partyMax = 0;
-            DiscordRPC.UpdatePresence(ref prsnc);
         }
     }
 }
