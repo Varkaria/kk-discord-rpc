@@ -1,5 +1,6 @@
 
 # Koikatsu: Discord Rich Presence
-i will make readme.md when it's working
-now it's not working : (
+
+Now i find some people to solve this problem and yea it's working right now
+and moved to [NiggoJaecha fork](https://github.com/NiggoJaecha/kk-discord-rpc) go check it here if you want to use it : )
 
